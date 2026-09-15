@@ -1,19 +1,27 @@
 # Aqua Protection Demo
 
-A single repository of artifacts that demonstrate Aqua's runtime and scan-time
-controls, so a Solution Architect (or a customer) can trigger multiple detections
-from one place instead of hunting down scattered demos.
+One container image that exercises Aqua's **scan-time** and **runtime** controls,
+so a Solution Architect (or a customer) can trigger every detection from one place
+instead of hunting down scattered demos.
+
+**Scan it** and Dynamic Threat Analysis detonates it in Aqua's cloud sandbox.
+**Run it** in a monitored environment and the live container controls fire. The
+same image does both — you do not need a different artifact for each.
 
 > **No real malware.** EICAR is the standard AV test string, the DTA leg is a
 > simulated weaponization (no miner/botnet/C2), and the eBPF component is declawed.
 
-## The unified image (recommended)
+## The image
 
-[`unified/`](unified/) builds **one image that exercises all five controls**:
+```sh
+docker pull andreazorzetto/aqua-protection-demo:latest
+```
+
+Or build it yourself — the build context is the **repository root**:
 
 ```sh
 docker build --platform linux/amd64 -f unified/Dockerfile \
-  -t <registry>/aqua-protection-demo:latest .        # context = repo root
+  -t <registry>/aqua-protection-demo:latest .
 ```
 
 | When you… | Aqua control(s) that fire |
@@ -26,9 +34,21 @@ The eBPF leg is prebuilt at image-build time and fails gracefully when it can't
 attach (non-privileged runs, or the DTA sandbox), so the image is safe to run
 anywhere and simply lights up more controls the more privilege it has.
 
+## Running one control at a time
+
+Pass a leg name to exercise a single control instead of all five:
+
+```sh
+docker run andreazorzetto/aqua-protection-demo:latest amp
+#   drift | amp | secure-ai | behavioural | dta
+```
+
+On Kubernetes, [`unified/k8s/job.yaml`](unified/k8s/job.yaml) runs it once with
+the privileges the eBPF leg needs; set `args` there to pick a single leg.
+
 ## The individual legs
 
-Each control also exists as a standalone artifact for focused demos:
+Most controls also exist as a standalone image for focused demos:
 
 | Leg | Aqua control | Mechanism |
 |-----|--------------|-----------|
