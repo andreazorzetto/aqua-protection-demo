@@ -75,7 +75,7 @@ jobs:
       # Recorded for the release, never gating: the old base images are
       # deliberate and always carry findings.
       - name: Vulnerability report
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}:${{ steps.version.outputs.value }}
           format: table
