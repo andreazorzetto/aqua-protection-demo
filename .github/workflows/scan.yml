@@ -1,0 +1,133 @@
+# Security and dependency scanning.
+#
+# This repository intentionally contains malware-shaped artifacts (EICAR, a fake
+# miner config, a declawed eBPF rootkit) and intentionally old base images, so
+# vulnerability and misconfiguration findings are EXPECTED. Those scans report
+# to the Security tab and never fail the build.
+#
+# The secret scan DOES fail the build: a real API key must never land here.
+name: scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  lint:
+    name: shell + dockerfile lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ShellCheck
+        uses: ludeeus/action-shellcheck@2.0.0
+        env:
+          SHELLCHECK_OPTS: -S warning
+        with:
+          severity: warning
+
+      - name: Hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          recursive: true
+          dockerfile: "*/Dockerfile"
+          # DL3008/DL3009/DL3015: unpinned apt versions and cache cleanup —
+          # deliberate here, the old packages are part of the demo.
+          ignore: DL3008,DL3009,DL3015,DL3018,DL3002
+          failure-threshold: error
+
+  secrets:
+    name: secret scan (blocking)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  config:
+    name: IaC / Dockerfile misconfig (report only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Trivy config scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: config
+          scan-ref: .
+          format: sarif
+          output: trivy-config.sarif
+          exit-code: '0'
+
+      - name: Upload to Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        continue-on-error: true   # needs a public repo or GitHub Advanced Security
+        with:
+          sarif_file: trivy-config.sarif
+          category: trivy-config
+
+  image:
+    name: image vuln scan (report only)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: unified
+            context: .
+            file: unified/Dockerfile
+          - name: dta-sim
+            context: dta-sim
+            file: dta-sim/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: scan-target/${{ matrix.name }}:ci
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: scan-target/${{ matrix.name }}:ci
+          format: sarif
+          output: trivy-${{ matrix.name }}.sarif
+          exit-code: '0'
+          scanners: vuln,secret
+
+      - name: Upload to Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        continue-on-error: true
+        with:
+          sarif_file: trivy-${{ matrix.name }}.sarif
+          category: trivy-image-${{ matrix.name }}
+
+      - name: Summary table
+        if: always()
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: scan-target/${{ matrix.name }}:ci
+          format: table
+          exit-code: '0'
