@@ -1,0 +1,19 @@
+{
+  "//": "FAKE cryptominer config for Aqua DTA testing. Not a real miner, not a",
+  "//": "real wallet, not a real pool. The .invalid TLD never resolves (RFC 6761).",
+  "autosave": true,
+  "cpu": true,
+  "opencl": false,
+  "cuda": false,
+  "randomx": { "init": -1, "mode": "auto" },
+  "pools": [
+    {
+      "algo": "rx/0",
+      "url": "stratum+tcp://pool.example-mining.invalid:3333",
+      "user": "FAKEWALLETdoNotUse0000000000000000000000000000000000000000000000000000",
+      "pass": "x",
+      "keepalive": true,
+      "tls": false
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+# Behavioural Detection demo — eBPF rootkit (bpf_probe_write_user on execve).
+#
+# Run-once Job (not a Deployment): the demo builds, runs the rootkit for ~5s,
+# then exits. A Deployment forces restartPolicy: Always and CrashLoop-spams it.
+#
+# It needs three things to actually load + attach the BPF program:
+#   1. privileged (bpf() syscall + tracepoint attach; also lifts seccomp block)
+#   2. debugfs/tracefs mounted (tracepoint id lives in /sys/kernel/debug/tracing)
+#   3. an x86_64 node with BTF (/sys/kernel/btf/vmlinux) — run.sh falls back to
+#      btfhub if BTF is absent.
+#
+# Success looks like `Tracing successfully..!` in the logs — that is when the
+# rootkit is live and Behavioural Detection should raise an incident.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: bpf-rootkit-demo
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: bpf-rootkit-demo
+          image: REGISTRY/aqua-protection-demo-behavioural:latest  # <-- set your registry
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: debugfs
+              mountPath: /sys/kernel/debug
+      volumes:
+        - name: debugfs
+          hostPath:
+            path: /sys/kernel/debug
+            type: Directory

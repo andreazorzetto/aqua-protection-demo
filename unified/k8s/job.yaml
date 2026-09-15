@@ -1,0 +1,44 @@
+# Unified Aqua protection demo — all five controls in one run-once Job.
+#
+# Drift, AMP and Secure AI fire on any monitored node. Behavioural (eBPF) also
+# needs all three of:
+#   1. privileged (bpf() syscall + tracepoint attach; also lifts the seccomp block)
+#   2. debugfs/tracefs mounted at /sys/kernel/debug
+#   3. an x86_64 node with BTF (/sys/kernel/btf/vmlinux); run-behavioural.sh
+#      falls back to btfhub when kernel BTF is absent
+# Without them the eBPF leg logs that it is skipping and the run continues.
+#
+# Job, not Deployment: the container runs the legs once and exits.
+# Set `args` to a single leg name (drift | amp | secure-ai | behavioural | dta)
+# to demo one control instead of all five.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: aqua-protection-demo
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: aqua-protection-demo
+          image: andreazorzetto/aqua-protection-demo:latest
+          imagePullPolicy: Always
+          # args: ["amp"]
+          # Optional real AI keys for the Secure AI leg (OPENAI_API_KEY,
+          # ANTHROPIC_API_KEY). Absent the Secret, the leg still fires on the
+          # outbound TLS request and the provider returns 401.
+          envFrom:
+            - secretRef:
+                name: aqua-demo-ai-keys
+                optional: true
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: debugfs
+              mountPath: /sys/kernel/debug
+      volumes:
+        - name: debugfs
+          hostPath:
+            path: /sys/kernel/debug
+            type: Directory
