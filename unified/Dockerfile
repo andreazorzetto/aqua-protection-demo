@@ -30,9 +30,9 @@ COPY combined-runtime/drift.sh      /app/drift.sh
 COPY combined-runtime/amp.sh        /app/amp.sh
 COPY combined-runtime/secure_ai.py  /app/secure_ai.py
 
-# DTA weaponization simulator (benign)
-COPY dta-sim/weaponize.sh    /app/weaponize.sh
-COPY dta-sim/miner-config.txt /opt/miner-config.txt
+# scan-time weaponization simulator (benign)
+COPY unified/weaponize.sh     /app/weaponize.sh
+COPY unified/miner-config.txt /opt/miner-config.txt
 
 # orchestration
 COPY unified/run-behavioural.sh /app/run-behavioural.sh

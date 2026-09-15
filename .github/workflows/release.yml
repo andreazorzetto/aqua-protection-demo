@@ -39,10 +39,6 @@ jobs:
             image: aqua-protection-demo
             context: .
             file: unified/Dockerfile
-          - name: dta-sim
-            image: dta-sim
-            context: dta-sim
-            file: dta-sim/Dockerfile
     steps:
       - uses: actions/checkout@v4
 

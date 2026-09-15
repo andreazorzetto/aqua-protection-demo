@@ -21,7 +21,7 @@ docker push <registry>/aqua-protection-demo:latest
 - **Stage 1** compiles the eBPF rootkit (`libbpf` cloned + built) so runtime is
   fast and deterministic — no apt/clone at container start.
 - **Stage 2** is an intentionally old `ubuntu:20.04` (also yields a vuln finding),
-  with the prebuilt rootkit, the runtime scripts, and the benign DTA simulator.
+  with the prebuilt rootkit, the runtime scripts, and the weaponization simulator.
 - `libelf1` + `zlib1g` are installed in the runtime stage — the prebuilt rootkit
   links against them dynamically.
 
@@ -56,9 +56,35 @@ docker run <image> amp        # drift | amp | secure-ai | behavioural | dta
 
 In the Job, set `args: ["amp"]` on the container.
 
+## What the scan-time leg simulates
+
+`weaponize.sh` exhibits the behaviors a sandbox flags when it detonates an
+image, using only harmless stand-ins:
+
+| Behavior | Benign stand-in |
+|----------|-----------------|
+| malware on disk | EICAR test string (downloaded at runtime) |
+| cryptominer config | fake `miner-config.txt` (invalid pool/wallet) |
+| miner processes | `sleep` renamed to `xmrig` / `kdevtmpfsi` / `kinsing` |
+| scanner processes | `sleep` renamed to `shodan` / `masscan` / `zmap` |
+| obfuscated exec | `base64 -d \| sh` of benign commands |
+| host discovery | reads `/proc/filesystems`, `/etc/passwd`, `uname`/`id` |
+| dropped executable | `/tmp/dropped.sh` written + run at runtime |
+| network scanning | curl sweep of RFC 5737 TEST-NET ranges |
+| C2 beacon | `.invalid` DNS lookups + spoofed-UA HTTP to TEST-NET |
+
+No real miner, botnet, C2, or wallet, and no self-propagation or persistence.
+Every network target is either an unresolvable `.invalid` host or an RFC 5737
+TEST-NET address (`192.0.2/24`, `198.51.100/24`, `203.0.113/24`), so no real
+host is ever contacted.
+
+Scanned under an Aqua DTA assurance policy it scores **Critical** — 23
+signatures across Collection, Communication, Execution, Propagation and
+Weaponization, and 20 outbound connections.
+
 ## Safety
 
 No real malware. EICAR is the standard AV test string; the DTA leg is fully
-simulated (see [`../dta-sim/`](../dta-sim/)); the eBPF rootkit is declawed
+simulated (see [`weaponize.sh`](weaponize.sh)); the eBPF rootkit is declawed
 (it overwrites each exec'd program name with itself). Safe to run anywhere — it
 simply lights up more controls the more privilege it is given.

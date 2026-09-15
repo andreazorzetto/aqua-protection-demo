@@ -9,7 +9,7 @@
 # persists or self-propagates.
 set -u
 
-echo "[dta-sim] simulating post-startup weaponization (all benign)..."
+echo "[weaponize] simulating post-startup weaponization (all benign)..."
 
 # --- obfuscated execution helper: base64-encode a benign command, decode + run
 # (base64 -d | sh chains -> Data Encoding).
@@ -22,19 +22,19 @@ if ! curl -fsSL -m 10 https://secure.eicar.org/eicar.com.txt -o /tmp/eicar.com 2
   printf '%s' 'X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*' > /tmp/eicar.com
 fi
 cat /tmp/eicar.com >/dev/null 2>&1
-echo "[dta-sim] EICAR test file written + accessed"
+echo "[weaponize] EICAR test file written + accessed"
 
 # 2) Cryptominer indicators — drop a FAKE miner config with pool/algo strings.
 cp /opt/miner-config.txt /tmp/config.json
-echo "[dta-sim] dropped fake miner config (algo rx/0, pool .invalid)"
+echo "[weaponize] dropped fake miner config (algo rx/0, pool .invalid)"
 
 # 3) Obfuscated command chains (base64 decode + exec) — Data Encoding signatures.
-obf_run 'echo "[dta-sim] obfuscated payload 1 executed"'
+obf_run 'echo "[weaponize] obfuscated payload 1 executed"'
 obf_run 'id'
 obf_run 'uname -a'
 obf_run 'cat /etc/passwd | head -n 1'
-obf_run 'echo "[dta-sim] obfuscated payload 5 executed"'
-echo "[dta-sim] ran base64-obfuscated command chains"
+obf_run 'echo "[weaponize] obfuscated payload 5 executed"'
+echo "[weaponize] ran base64-obfuscated command chains"
 
 # 4) System/host discovery — Discovery signatures.
 cat /proc/filesystems >/dev/null 2>&1
@@ -53,13 +53,13 @@ chmod +x /tmp/dropped.sh
 for name in kdevtmpfsi xmrig kinsing; do
   if cp /bin/sleep "/tmp/$name" 2>/dev/null; then
     "/tmp/$name" 30 &
-    echo "[dta-sim] benign process masquerading as miner '$name' (pid $!)"
+    echo "[weaponize] benign process masquerading as miner '$name' (pid $!)"
   fi
 done
 for name in shodan masscan zmap; do
   if cp /bin/sleep "/tmp/$name" 2>/dev/null; then
     "/tmp/$name" 30 &
-    echo "[dta-sim] benign process masquerading as scanner '$name' (pid $!)"
+    echo "[weaponize] benign process masquerading as scanner '$name' (pid $!)"
   fi
 done
 
@@ -74,7 +74,7 @@ scan() {
   done
 }
 scan &
-echo "[dta-sim] launched benign TEST-NET port sweep (Propagation)"
+echo "[weaponize] launched benign TEST-NET port sweep (Propagation)"
 
 # 8) Beacon-like C2 lookups + spoofed-UA HTTP beacons (Communication / C2).
 for h in pool.example-mining.invalid xmr.fake-pool.invalid stratum.fake-pool.invalid \
@@ -89,7 +89,7 @@ beacon() {
   done
 }
 beacon &
-echo "[dta-sim] issued beacon-like DNS lookups + spoofed-UA HTTP beacons"
+echo "[weaponize] issued beacon-like DNS lookups + spoofed-UA HTTP beacons"
 
-echo "[dta-sim] all behaviors emitted; sleeping so the sandbox can observe."
+echo "[weaponize] all behaviors emitted; sleeping so the sandbox can observe."
 sleep 35

@@ -88,9 +88,6 @@ jobs:
           - name: unified
             context: .
             file: unified/Dockerfile
-          - name: dta-sim
-            context: dta-sim
-            file: dta-sim/Dockerfile
     steps:
       - uses: actions/checkout@v4
 

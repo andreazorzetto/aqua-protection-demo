@@ -36,7 +36,6 @@ Each control also exists as a standalone artifact for focused demos:
 | [`amp/`](amp/) | **Advanced Malware Protection** | fetch + access EICAR at runtime (on-access) |
 | [`secure-ai/`](secure-ai/) | **Secure AI** | outbound TLS calls to AI providers (fires without an API key) |
 | [`combined-runtime/`](combined-runtime/) | **Drift + AMP + Secure AI** | Alpine sequential runner ("run once, get three incidents") |
-| [`dta-sim/`](dta-sim/) | **Dynamic Threat Analysis** | benign weaponization simulator — scores **Critical**, no real malware |
 
 ## Control types
 
@@ -58,10 +57,11 @@ Each control also exists as a standalone artifact for focused demos:
 
 ## DTA result
 
-`dta-sim` scores **Critical** under a DTA assurance policy — 23 signatures across
-Collection, Communication, Execution, Propagation and Weaponization, and 20
-outbound connections. See [`dta-sim/README.md`](dta-sim/README.md).
+Scanned under a DTA assurance policy the unified image scores **Critical** — 23
+signatures across Collection, Communication, Execution, Propagation and
+Weaponization, and 20 outbound connections. The simulated behaviors are listed
+in [`unified/README.md`](unified/README.md).
 
 ## Provenance
 - `behavioural/` recovered from `teamnautilus/bpf_rootkit_demo:latest`.
-- `dta-sim/` and the runtime legs are original benign work.
+- The weaponization simulator and the runtime legs are original benign work.
