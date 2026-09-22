@@ -27,19 +27,32 @@ docker push <registry>/aqua-protection-demo:latest
 
 ## Running on Kubernetes
 
-[`k8s/job.yaml`](k8s/job.yaml) runs all five legs once (a Job, not a Deployment,
-so it does not restart after finishing):
+Two manifests, depending on whether you want the pod to finish or to stay up:
+
+| Manifest | Behavior |
+|----------|----------|
+| [`k8s/job.yaml`](k8s/job.yaml) | Runs every leg once, then completes. |
+| [`k8s/deployment.yaml`](k8s/deployment.yaml) | Runs every leg once, then idles until deleted, so the pod stays `Running`. |
 
 ```sh
-kubectl apply -f unified/k8s/job.yaml
+kubectl apply -f unified/k8s/job.yaml          # one clean run
+kubectl apply -f unified/k8s/deployment.yaml   # long-running pod
 ```
 
-It is already privileged with `/sys/kernel/debug` mounted, which the
+The Deployment sets `KEEP_RUNNING=true`, which makes the entrypoint idle instead
+of exiting — without it a Deployment would restart the container every time it
+finished. To fire the legs again:
+
+```sh
+kubectl rollout restart deploy/aqua-protection-demo
+```
+
+Both are already privileged with `/sys/kernel/debug` mounted, which the
 **Behavioural** leg needs along with an x86_64 node with BTF. Without those the
 eBPF leg logs that it is skipping and the run continues.
 
-To supply real AI keys for the Secure AI leg, create the Secret the Job already
-references (it is `optional`, so the Job runs with or without it):
+To supply real AI keys for the Secure AI leg, create the Secret both manifests
+already reference (it is `optional`, so they run with or without it):
 
 ```sh
 kubectl create secret generic aqua-demo-ai-keys \
@@ -54,7 +67,8 @@ Pass a leg name to run just one — useful for a focused demo:
 docker run <image> amp        # drift | amp | secure-ai | behavioural | dta
 ```
 
-In the Job, set `args: ["amp"]` on the container.
+In either manifest, set `args: ["amp"]` on the container. With the Deployment
+that leg runs and the pod then idles.
 
 ## What the scan-time leg simulates
 

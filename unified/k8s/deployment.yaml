@@ -1,0 +1,58 @@
+# Unified Aqua protection demo — long-running variant.
+#
+# Use this when you want a pod that stays Running: it fires every leg once at
+# startup, then idles until deleted (KEEP_RUNNING=true). A Deployment restarts
+# any container that exits, so without that the pod would loop forever.
+#
+# Use k8s/job.yaml instead when you want a single clean run that completes.
+#
+#   kubectl apply -f unified/k8s/deployment.yaml
+#   kubectl logs -f deploy/aqua-protection-demo
+#
+# To fire the legs again, restart the pod:
+#   kubectl rollout restart deploy/aqua-protection-demo
+#
+# Behavioural (eBPF) needs privileged + debugfs at /sys/kernel/debug + an
+# x86_64 node with BTF. Without them that leg logs a skip and the rest continue.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aqua-protection-demo
+  labels:
+    app: aqua-protection-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aqua-protection-demo
+  template:
+    metadata:
+      labels:
+        app: aqua-protection-demo
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: aqua-protection-demo
+          image: andreazorzetto/aqua-protection-demo:latest
+          imagePullPolicy: Always
+          # args: ["amp"]   # run a single leg, then idle
+          env:
+            - name: KEEP_RUNNING
+              value: "true"
+          # Optional real AI keys for the Secure AI leg (OPENAI_API_KEY,
+          # ANTHROPIC_API_KEY). Absent the Secret, the leg still fires on the
+          # outbound TLS request and the provider returns 401.
+          envFrom:
+            - secretRef:
+                name: aqua-demo-ai-keys
+                optional: true
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: debugfs
+              mountPath: /sys/kernel/debug
+      volumes:
+        - name: debugfs
+          hostPath:
+            path: /sys/kernel/debug
+            type: Directory

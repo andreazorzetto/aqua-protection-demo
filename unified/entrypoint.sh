@@ -13,9 +13,28 @@
 #   legs: drift | amp | secure-ai | behavioural | dta
 # Run an arbitrary command:      docker run <image> /bin/sh -c '...'
 #
+# KEEP_RUNNING=true idles instead of exiting once the legs are done, so the
+# container keeps running as a Deployment (which restarts anything that exits).
+#
 # No real malware anywhere: EICAR is the standard AV test string, the DTA leg is
 # fully simulated (see weaponize.sh), and the eBPF rootkit is declawed.
 set -u
+
+# Stay alive until the pod is terminated. Backgrounding sleep and waiting on it
+# lets the TERM trap fire immediately, so deletes do not sit out the grace period.
+idle_if_asked() {
+  case "${KEEP_RUNNING:-}" in
+    true|TRUE|1|yes)
+      echo
+      echo "KEEP_RUNNING set — idling; container stays up until terminated."
+      trap 'echo "[entrypoint] terminating"; exit 0' TERM INT
+      while :; do
+        sleep 3600 &
+        wait $!
+      done
+      ;;
+  esac
+}
 
 step() {
   local name="$1"
@@ -38,6 +57,7 @@ run_leg() {
 
 if [ "$#" -gt 0 ]; then
   if run_leg "$1"; then
+    idle_if_asked
     exit 0
   fi
   # not a known leg name — treat the arguments as a command to exec
@@ -52,4 +72,6 @@ done
 
 echo
 echo "=== unified aqua-protection-demo finished ==="
+idle_if_asked
+# keep the container alive briefly so the enforcer flushes incidents
 sleep 5
