@@ -26,6 +26,9 @@ case "${AQUA_DEMO_COLOR:-auto}" in
   *) [ -n "${NO_COLOR:-}" ] && _use_color=0 ;;
 esac
 
+# C_CYAN is used by the entrypoints that source this file, not in here, which
+# ShellCheck cannot see because it lints each file on its own.
+# shellcheck disable=SC2034
 if [ "$_use_color" = 1 ]; then
   C_RESET=$(printf '\033[0m'); C_GREEN=$(printf '\033[1;32m')
   C_RED=$(printf '\033[1;31m'); C_CYAN=$(printf '\033[1;36m')
