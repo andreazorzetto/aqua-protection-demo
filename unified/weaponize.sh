@@ -54,13 +54,21 @@ cat /etc/passwd >/dev/null 2>&1
 hostname >/dev/null 2>&1; id >/dev/null 2>&1; uname -a >/dev/null 2>&1
 info "[weaponize] performed system/host discovery"
 
-# 5) Dropped executable + execution (runtime drop / drift-style) -> Unix Shell.
+# 5) Dropped executable + execution (runtime drop) -> Unix Shell.
 cat > /tmp/dropped.sh <<'EOS'
 #!/bin/sh
 echo "dropped-and-executed at runtime"
 EOS
 chmod +x /tmp/dropped.sh 2>/dev/null || true
-attempt "dropped-and-executed binary at runtime (drift)" /tmp/dropped.sh
+attempt "dropped shell script executed at runtime" /tmp/dropped.sh
+
+# A dropped ELF is what Drift Prevention keys on. The script above only execs
+# /bin/sh, which was in the image, so it never drifts however it is labelled.
+if drop_elf /tmp/dropped-bin; then
+  attempt "dropped ELF binary executed at runtime (drift)" /tmp/dropped-bin 1
+else
+  blocked "dropped ELF binary staging prevented"
+fi
 
 # 6) Miner + scanner process masquerade (benign `sleep`) -> Masquerading / Resource Hijacking.
 for name in kdevtmpfsi xmrig kinsing; do

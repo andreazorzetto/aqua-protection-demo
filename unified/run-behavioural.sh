@@ -13,7 +13,11 @@ cd /app/behavioural || exit 0
 run_rootkit() {
   # rootkit expects rootkit.bpf.o in the CWD; time-box it so the demo moves on.
   if timeout 8 ./rootkit; then
-    ok "eBPF rootkit attached (bpf_probe_write_user on execve)"
+    # Behavioural Detection has no prevent mode for this signature: the rootkit
+    # running IS the expected outcome, and Aqua's verdict lands in the console,
+    # not in this log. Reported uncoloured so it does not read as a failure.
+    detected "eBPF rootkit attached (bpf_probe_write_user on execve)"
+    info "[behavioural] expect TRC-191 \"Userspace memory modification by BPF\" in Aqua"
   else
     # Non-zero here on a privileged BTF node means the bpf load/attach was
     # refused — behavioural enforcement blocked it.
@@ -32,7 +36,7 @@ else
     info "[behavioural] fetched BTF for ${KREL}; attaching"
     BTF_FILE="/tmp/${KREL}.btf" run_rootkit
   else
-    note "[behavioural] eBPF unavailable here (needs privileged + debugfs + x86_64 BTF) — skipping"
+    skipped "eBPF unavailable here (needs privileged + debugfs + x86_64 BTF)"
   fi
 fi
 leg_summary

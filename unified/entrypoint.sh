@@ -20,7 +20,7 @@
 # fully simulated (see weaponize.sh), and the eBPF rootkit is declawed.
 set -u
 
-AQUA_DEMO_VERSION="1.1.0"
+AQUA_DEMO_VERSION="1.1.1"
 
 # shellcheck source=../combined-runtime/colors.sh
 . /app/colors.sh

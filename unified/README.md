@@ -33,6 +33,18 @@ attack executed (Aqua was not enforcing) and **red ✘** when it was prevented
 and once with it on and the same log turns from green to red, so the effect of a
 policy is visible at a glance in `kubectl logs`, k9s, or `docker run`.
 
+Red is the only unambiguous signal, because a container can see what happened to
+its own actions but never whether Aqua raised an incident. Green means the action
+was not blocked, which is not the same as "not detected" — an audit-mode policy
+alerts without stopping anything.
+
+Two states stay deliberately uncoloured so they do not read as failures:
+
+| State | Meaning |
+|-------|---------|
+| plain `·` | a **detect-only** control. Behavioural Detection has no prevent mode, so the rootkit attaching *is* the expected outcome and the verdict is in the Aqua console (TRC-191). |
+| dim `‒` | the leg cannot run in this environment at all, e.g. eBPF without privilege or BTF. |
+
 Colour is on by default. Set `NO_COLOR=1` (or `AQUA_DEMO_COLOR=never`) to emit
 plain text for viewers that do not render ANSI; `AQUA_DEMO_COLOR=always` forces
 it.

@@ -94,7 +94,7 @@ def leg_summary():
     elif _blocked:
         print(f"{C_GREEN}  → {_ok} executed{C_RESET}, {C_RED}{_blocked} prevented{C_RESET}")
     else:
-        print(f"{C_GREEN}  → {_ok} executed, 0 prevented — nothing stopped this leg{C_RESET}")
+        print(f"{C_GREEN}  → {_ok} executed, 0 prevented{C_RESET}")
 
 
 def main():
