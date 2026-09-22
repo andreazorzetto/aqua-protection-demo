@@ -33,6 +33,14 @@ attack executed (Aqua was not enforcing) and **red ✘** when it was prevented
 and once with it on and the same log turns from green to red, so the effect of a
 policy is visible at a glance in `kubectl logs`, k9s, or `docker run`.
 
+The Drift leg probes repeatedly rather than once, because drift prevention is
+not yet enforcing in the first seconds of a container's life: the enforcer has to
+register the container and resolve its image profile before it can tell a
+runtime-created binary from an image one. A single attempt at startup would
+report green on a cluster that blocks the same exec moments later. Tune the
+window with `AQUA_DEMO_DRIFT_TRIES` (default 8) and `AQUA_DEMO_DRIFT_DELAY`
+(default 5 seconds); it stops early as soon as an attempt is prevented.
+
 Red is the only unambiguous signal, because a container can see what happened to
 its own actions but never whether Aqua raised an incident. Green means the action
 was not blocked, which is not the same as "not detected" — an audit-mode policy

@@ -77,10 +77,12 @@ leg_summary() {
 # the image's own interpreter (/bin/sh), which is not drift and is never blocked.
 # The appended byte makes the content hash differ from the source binary too —
 # trailing bytes after the last ELF section are ignored by the loader.
+# Braces + a redirect on the group, because 2>/dev/null on a simple command does
+# not suppress errors raised while setting up its own redirection.
 drop_elf() {
   _src="${2:-/bin/sleep}"
   cp "$_src" "$1" 2>/dev/null || return 1
-  printf '\0' >> "$1" 2>/dev/null || true
+  { printf '\0' >> "$1"; } 2>/dev/null || return 1
   chmod +x "$1" 2>/dev/null || true
 }
 
