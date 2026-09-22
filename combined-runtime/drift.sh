@@ -6,6 +6,9 @@
 # (and is blocked if the policy is set to enforce).
 set -uo pipefail
 
+# shellcheck source=colors.sh
+. "$(dirname "$0")/colors.sh"
+
 target="/tmp/not-in-the-image.sh"
 
 cat > "${target}" <<'EOF'
@@ -14,5 +17,6 @@ echo "I am a binary that did not exist in the image — this is drift."
 EOF
 
 chmod +x "${target}"
-echo "Executing runtime-created binary: ${target}"
-"${target}"
+info "Executing runtime-created binary: ${target}"
+attempt "runtime-created binary ${target}" "${target}"
+leg_summary

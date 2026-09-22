@@ -9,7 +9,7 @@ RUN apk add --no-cache bash ca-certificates curl python3
 
 WORKDIR /app
 
-COPY entrypoint.sh drift.sh amp.sh secure_ai.py /app/
+COPY entrypoint.sh drift.sh amp.sh secure_ai.py colors.sh /app/
 RUN chmod +x /app/entrypoint.sh /app/drift.sh /app/amp.sh /app/secure_ai.py
 
 ENTRYPOINT ["/app/entrypoint.sh"]

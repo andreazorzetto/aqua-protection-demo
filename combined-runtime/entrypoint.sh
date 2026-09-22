@@ -8,14 +8,18 @@
 # Plus a vulnerability finding on scan, courtesy of the old base image.
 set -uo pipefail
 
+# shellcheck source=colors.sh
+. "$(dirname "$0")/colors.sh"
+
 run_step() {
-  echo "----- $1 -----"
+  printf '\n%s----- %s -----%s\n' "$C_CYAN" "$1" "$C_RESET"
   shift
-  "$@" || echo "(step returned non-zero; continuing)"
-  echo
+  "$@" || printf '%s(step returned non-zero; continuing)%s\n' "$C_DIM" "$C_RESET"
 }
 
-echo "combined-runtime starting"
+printf '%scombined-runtime starting%s\n' "$C_CYAN" "$C_RESET"
+printf '%s  ✔ green%s = attack executed (not enforced)   %s✘ red%s = attack prevented (Aqua blocked)\n' \
+  "$C_GREEN" "$C_RESET" "$C_RED" "$C_RESET"
 
 run_step "Drift Prevention"          /app/drift.sh
 run_step "Advanced Malware (AMP)"    /app/amp.sh

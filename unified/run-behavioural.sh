@@ -5,24 +5,34 @@
 # (e.g. in the DTA sandbox or a non-privileged run) it fails gracefully.
 set -u
 
+# shellcheck source=../combined-runtime/colors.sh
+. "$(dirname "$0")/colors.sh"
+
 cd /app/behavioural || exit 0
 
 run_rootkit() {
   # rootkit expects rootkit.bpf.o in the CWD; time-box it so the demo moves on.
-  timeout 8 ./rootkit || true
+  if timeout 8 ./rootkit; then
+    ok "eBPF rootkit attached (bpf_probe_write_user on execve)"
+  else
+    # Non-zero here on a privileged BTF node means the bpf load/attach was
+    # refused — behavioural enforcement blocked it.
+    blocked "eBPF rootkit load/attach prevented"
+  fi
 }
 
 if [ -f /sys/kernel/btf/vmlinux ]; then
-  echo "[behavioural] BTF present — attaching eBPF rootkit"
+  info "[behavioural] BTF present — attaching eBPF rootkit"
   run_rootkit
 else
-  echo "[behavioural] no kernel BTF; trying btfhub fallback"
+  info "[behavioural] no kernel BTF; trying btfhub fallback"
   KREL="$(uname -r)"
   URL="https://github.com/aquasecurity/btfhub-archive/raw/main/ubuntu/20.04/x86_64/${KREL}.btf.tar.xz"
   if wget -q "$URL" -O /tmp/btf.tar.xz 2>/dev/null && tar -xf /tmp/btf.tar.xz -C /tmp 2>/dev/null; then
-    echo "[behavioural] fetched BTF for ${KREL}; attaching"
+    info "[behavioural] fetched BTF for ${KREL}; attaching"
     BTF_FILE="/tmp/${KREL}.btf" run_rootkit
   else
-    echo "[behavioural] eBPF unavailable in this environment (needs privileged + debugfs + x86_64 BTF) — skipping"
+    note "[behavioural] eBPF unavailable here (needs privileged + debugfs + x86_64 BTF) — skipping"
   fi
 fi
+leg_summary

@@ -25,6 +25,18 @@ docker push <registry>/aqua-protection-demo:latest
 - `libelf1` + `zlib1g` are installed in the runtime stage — the prebuilt rootkit
   links against them dynamically.
 
+## Reading the log
+
+Each leg reports the outcome of every attack in colour: **green ✔** when the
+attack executed (Aqua was not enforcing) and **red ✘** when it was prevented
+(Aqua blocked it), with a per-leg tally. Run the image once with protection off
+and once with it on and the same log turns from green to red, so the effect of a
+policy is visible at a glance in `kubectl logs`, k9s, or `docker run`.
+
+Colour is on by default. Set `NO_COLOR=1` (or `AQUA_DEMO_COLOR=never`) to emit
+plain text for viewers that do not render ANSI; `AQUA_DEMO_COLOR=always` forces
+it.
+
 ## Running on Kubernetes
 
 Two manifests, depending on whether you want the pod to finish or to stay up:

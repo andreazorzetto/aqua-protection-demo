@@ -20,6 +20,19 @@
 # fully simulated (see weaponize.sh), and the eBPF rootkit is declawed.
 set -u
 
+AQUA_DEMO_VERSION="1.1.0"
+
+# shellcheck source=../combined-runtime/colors.sh
+. /app/colors.sh
+
+# One legend so a reader knows what the colours mean. Run the image with Aqua
+# not enforcing and the lines are mostly green (attacks executed); run it with
+# enforcement on and they turn red (attacks prevented).
+legend() {
+  printf '%s  ✔ green%s = attack executed (not enforced)   %s✘ red%s = attack prevented (Aqua blocked)\n' \
+    "$C_GREEN" "$C_RESET" "$C_RED" "$C_RESET"
+}
+
 # Stay alive until the pod is terminated. Backgrounding sleep and waiting on it
 # lets the TERM trap fire immediately, so deletes do not sit out the grace period.
 idle_if_asked() {
@@ -38,10 +51,9 @@ idle_if_asked() {
 
 step() {
   local name="$1"
-  echo
-  echo "========================= $name ========================="
+  printf '\n%s========================= %s =========================%s\n' "$C_CYAN" "$name" "$C_RESET"
   shift
-  "$@" || echo "($name leg returned non-zero; continuing)"
+  "$@" || printf '%s(%s leg returned non-zero; continuing)%s\n' "$C_DIM" "$name" "$C_RESET"
 }
 
 run_leg() {
@@ -64,14 +76,15 @@ if [ "$#" -gt 0 ]; then
   exec "$@"
 fi
 
-echo "=== unified aqua-protection-demo starting ==="
+printf '%s=== unified aqua-protection-demo v%s starting ===%s\n' "$C_CYAN" "$AQUA_DEMO_VERSION" "$C_RESET"
+legend
 
 for leg in drift amp secure-ai behavioural dta; do
   run_leg "$leg"
 done
 
-echo
-echo "=== unified aqua-protection-demo finished ==="
+printf '\n%s=== unified aqua-protection-demo v%s finished ===%s\n' "$C_CYAN" "$AQUA_DEMO_VERSION" "$C_RESET"
+legend
 idle_if_asked
 # keep the container alive briefly so the enforcer flushes incidents
 sleep 5
