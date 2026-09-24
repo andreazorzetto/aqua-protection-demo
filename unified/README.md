@@ -37,9 +37,13 @@ The Drift leg probes repeatedly rather than once, because drift prevention is
 not yet enforcing in the first seconds of a container's life: the enforcer has to
 register the container and resolve its image profile before it can tell a
 runtime-created binary from an image one. A single attempt at startup would
-report green on a cluster that blocks the same exec moments later. Tune the
-window with `AQUA_DEMO_DRIFT_TRIES` (default 8) and `AQUA_DEMO_DRIFT_DELAY`
-(default 5 seconds); it stops early as soon as an attempt is prevented.
+report green on a cluster that blocks the same exec moments later. So it
+re-checks once a second until the container is `AQUA_DEMO_DRIFT_SETTLE` seconds
+old (default 10), and stops at the first prevented attempt. When enforcement is
+already on, the answer is immediate; the full window is only spent when nothing
+blocks. If an attempt is prevented after earlier ones ran, the log reports the
+container age at which it happened, which shows how long the enforcer took to
+attach and what the setting can safely be lowered to.
 
 Red is the only unambiguous signal, because a container can see what happened to
 its own actions but never whether Aqua raised an incident. Green means the action
