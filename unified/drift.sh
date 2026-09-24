@@ -49,10 +49,7 @@ while :; do
   i=$((i + 1))
   target="/tmp/drifted-binary-${i}"
   # /bin/true so each probe exits at once; the exec is what drift keys on.
-  # exec -a sets argv[0] to "true": on a busybox base (Alpine) /bin/true is
-  # busybox itself, which picks its applet from argv[0] and would otherwise
-  # answer "applet not found" (exit 127), a false "prevented". GNU true ignores it.
-  if drop_elf "${target}" /bin/true && (exec -a true "${target}") >/dev/null 2>&1; then
+  if drop_elf "${target}" /bin/true && "${target}" >/dev/null 2>&1; then
     ran=$((ran + 1))
   else
     prevented=1

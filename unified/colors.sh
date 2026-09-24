@@ -194,9 +194,7 @@ banner() {
 # keys on executing a binary that was not in the image; a shell script only execs
 # the image's own interpreter (/bin/sh), which is not drift and is never blocked.
 # The appended byte makes the content hash differ from the source binary too —
-# trailing bytes after the last ELF section are ignored by the loader. On a
-# busybox base the source is busybox itself, which picks its applet from argv[0],
-# so exec the copy under the applet's name (bash: exec -a sleep "$path").
+# trailing bytes after the last ELF section are ignored by the loader.
 # Braces + a redirect on the group, because 2>/dev/null on a simple command does
 # not suppress errors raised while setting up its own redirection.
 drop_elf() {
