@@ -40,6 +40,11 @@ announced=0
 age=""
 i=0
 
+leg_intro "copy a binary to a new path at runtime, then execute it" \
+          "Drift Prevention blocks executables that were not in the image"
+
+act "copy /bin/true to /tmp/drifted-binary-1 (+1 byte), then run the copy"
+
 while :; do
   i=$((i + 1))
   target="/tmp/drifted-binary-${i}"
@@ -56,17 +61,21 @@ while :; do
   fi
 
   if age=$(container_age); then
+    [ "${i}" -gt 1 ] && info "attempt ${i}  ${target}  ran (container ${age}s old)"
     [ "${age}" -ge "${settle}" ] && break
   else
     age=""
+    [ "${i}" -gt 1 ] && info "attempt ${i}  ${target}  ran"
     [ "${i}" -ge "${max_tries}" ] && break
   fi
 
   if [ "${announced}" -eq 0 ]; then
     if [ -n "${age}" ]; then
-      info "Runtime-created binary ran at t+${age}s. Re-checking until t+${settle}s in case the enforcer is still attaching."
+      info "attempt 1 ran at ${age}s after container start; the enforcer may still be"
+      info "attaching, so a fresh binary is tried every ${delay}s until ${settle}s"
     else
-      info "Runtime-created binary ran. Re-checking for ${settle}s in case the enforcer is still attaching."
+      info "attempt 1 ran; the enforcer may still be attaching, so a fresh binary"
+      info "is tried every ${delay}s for ${settle}s"
     fi
     announced=1
   fi
@@ -74,13 +83,17 @@ while :; do
 done
 
 when=""
-[ -n "${age}" ] && when=" at t+${age}s"
+[ -n "${age}" ] && when=" ${age}s after container start"
 
 if [ "${prevented}" -eq 1 ] && [ "${ran}" -eq 0 ]; then
   blocked "runtime-created binary — prevented on the first attempt"
+  note="blocked on the first attempt"
 elif [ "${prevented}" -eq 1 ]; then
-  blocked "runtime-created binary — prevented${when}, after ${ran} early attempt(s) ran before enforcement engaged"
+  blocked "runtime-created binary — attempt ${i} prevented${when}"
+  info "the ${ran} earlier attempt(s) ran before enforcement engaged"
+  note="blocked${when}"
 else
   ok "runtime-created binary — executed (${ran} attempt(s)${when:+, last${when}})"
+  note="${ran} of ${ran} attempts ran, none blocked"
 fi
-leg_summary
+leg_summary "${note}"

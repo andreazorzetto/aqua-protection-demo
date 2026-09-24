@@ -9,10 +9,11 @@
 # persists or self-propagates.
 set -u
 
-# shellcheck source=../combined-runtime/colors.sh
+# shellcheck source=colors.sh
 . "$(dirname "$0")/colors.sh"
 
-info "[weaponize] simulating post-startup weaponization (all benign)..."
+leg_intro "act like a compromised image: miners, C2 beacons, scans, dropped files" \
+          "a DTA scan detonates the image and flags these; enforcement may block some"
 
 # --- obfuscated execution helper: base64-encode a benign command, decode + run
 # (base64 -d | sh chains -> Data Encoding).
@@ -21,6 +22,7 @@ obf_run() {
 }
 
 # 1) Malware signature on disk — fetch EICAR at runtime (Critical: Malware Detected).
+act "[Malware] fetch the EICAR test file to /tmp/eicar.com and read it"
 if ! curl -fsSL -m 10 https://secure.eicar.org/eicar.com.txt -o /tmp/eicar.com 2>/dev/null; then
   printf '%s' 'X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*' > /tmp/eicar.com 2>/dev/null || true
 fi
@@ -31,6 +33,7 @@ else
 fi
 
 # 2) Cryptominer indicators — drop a FAKE miner config with pool/algo strings.
+act "[Cryptomining] drop a fake miner config to /tmp/config.json"
 if cp /opt/miner-config.txt /tmp/config.json 2>/dev/null; then
   ok "dropped fake miner config (algo rx/0, pool .invalid)"
 else
@@ -38,6 +41,7 @@ else
 fi
 
 # 3) Obfuscated command chains (base64 decode + exec) — Data Encoding signatures.
+act "[Obfuscation] decode and run base64 commands: id, uname -a, cat /etc/passwd"
 obf_run 'echo "[weaponize] obfuscated payload 1 executed"' >/dev/null 2>&1
 obf_run 'id' >/dev/null 2>&1
 obf_run 'uname -a' >/dev/null 2>&1
@@ -49,10 +53,11 @@ else
 fi
 
 # 4) System/host discovery — Discovery signatures.
+act "[Discovery] enumerate the host: /proc/filesystems, /etc/passwd, id, uname"
 cat /proc/filesystems >/dev/null 2>&1
 cat /etc/passwd >/dev/null 2>&1
 hostname >/dev/null 2>&1; id >/dev/null 2>&1; uname -a >/dev/null 2>&1
-info "[weaponize] performed system/host discovery"
+info "done"
 
 # 5) Dropped executable + execution (runtime drop) -> Unix Shell.
 cat > /tmp/dropped.sh <<'EOS'
@@ -60,6 +65,7 @@ cat > /tmp/dropped.sh <<'EOS'
 echo "dropped-and-executed at runtime"
 EOS
 chmod +x /tmp/dropped.sh 2>/dev/null || true
+act "[Execution] drop a shell script and an ELF binary in /tmp, then run them"
 attempt "dropped shell script executed at runtime" /tmp/dropped.sh
 
 # A dropped ELF is what Drift Prevention keys on. The script above only execs
@@ -71,6 +77,7 @@ else
 fi
 
 # 6) Miner + scanner process masquerade (benign `sleep`) -> Masquerading / Resource Hijacking.
+act "[Masquerading] run sleep renamed to miner names: kdevtmpfsi, xmrig, kinsing"
 for name in kdevtmpfsi xmrig kinsing; do
   if cp /bin/sleep "/tmp/$name" 2>/dev/null; then
     attempt_bg "process masquerading as miner '$name'" "/tmp/$name" 30
@@ -78,6 +85,7 @@ for name in kdevtmpfsi xmrig kinsing; do
     blocked "miner '$name' drop prevented"
   fi
 done
+act "[Masquerading] run sleep renamed to scanner names: shodan, masscan, zmap"
 for name in shodan masscan zmap; do
   if cp /bin/sleep "/tmp/$name" 2>/dev/null; then
     attempt_bg "process masquerading as scanner '$name'" "/tmp/$name" 30
@@ -96,10 +104,12 @@ scan() {
     done
   done
 }
+act "[Propagation] sweep TEST-NET ranges on ports 80 and 23"
 scan &
-info "[weaponize] launched benign TEST-NET port sweep (Propagation)"
+info "TEST-NET ranges are reserved for documentation and never route"
 
 # 8) Beacon-like C2 lookups + spoofed-UA HTTP beacons (Communication / C2).
+act "[C2] resolve mining-pool and botnet hostnames, send spoofed-UA HTTP beacons"
 for h in pool.example-mining.invalid xmr.fake-pool.invalid stratum.fake-pool.invalid \
          c2.example-botnet.invalid bot.fake-c2.invalid; do
   getent hosts "$h" >/dev/null 2>&1 || true
@@ -112,8 +122,7 @@ beacon() {
   done
 }
 beacon &
-info "[weaponize] issued beacon-like DNS lookups + spoofed-UA HTTP beacons"
+info "*.invalid names never resolve; 192.0.2.10 is TEST-NET and never routes"
 
+countdown 35 "all behaviours emitted; holding 35s so the sandbox can observe them"
 leg_summary
-info "[weaponize] all behaviors emitted; sleeping so the sandbox can observe."
-sleep 35

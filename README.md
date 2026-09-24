@@ -46,17 +46,6 @@ docker run andreazorzetto/aqua-protection-demo:latest amp
 On Kubernetes, [`unified/k8s/job.yaml`](unified/k8s/job.yaml) runs it once with
 the privileges the eBPF leg needs; set `args` there to pick a single leg.
 
-## The individual legs
-
-Most controls also exist as a standalone image for focused demos:
-
-| Leg | Aqua control | Mechanism |
-|-----|--------------|-----------|
-| [`behavioural/`](behavioural/) | **Behavioural Detection** | eBPF `bpf_probe_write_user` on `execve` (+ `k8s/job.yaml`: privileged, debugfs, run-once) |
-| [`amp/`](amp/) | **Advanced Malware Protection** | fetch + access EICAR at runtime (on-access) |
-| [`secure-ai/`](secure-ai/) | **Secure AI** | outbound TLS calls to AI providers (fires without an API key) |
-| [`combined-runtime/`](combined-runtime/) | **Drift + AMP + Secure AI** | Alpine sequential runner ("run once, get three incidents") |
-
 ## Control types
 
 - **Runtime** (Behavioural, Drift, AMP, Secure AI) — fire when the container
@@ -83,5 +72,5 @@ Weaponization, and 20 outbound connections. The simulated behaviors are listed
 in [`unified/README.md`](unified/README.md).
 
 ## Provenance
-- `behavioural/` recovered from `teamnautilus/bpf_rootkit_demo:latest`.
+- `behavioural/src/` (the eBPF rootkit) recovered from `teamnautilus/bpf_rootkit_demo:latest`.
 - The weaponization simulator and the runtime legs are original benign work.

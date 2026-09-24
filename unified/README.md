@@ -27,11 +27,15 @@ docker push <registry>/aqua-protection-demo:latest
 
 ## Reading the log
 
-Each leg reports the outcome of every attack in colour: **green ✔** when the
-attack executed (Aqua was not enforcing) and **red ✘** when it was prevented
-(Aqua blocked it), with a per-leg tally. Run the image once with protection off
-and once with it on and the same log turns from green to red, so the effect of a
-policy is visible at a glance in `kubectl logs`, k9s, or `docker run`.
+The log is laid out to be followed live. It opens with a banner (pod name,
+kernel, legend), then each leg gets a numbered header, a one-line **attack** and
+**expect**, and a timestamped line (`MM:SS` since start) for every step as it
+runs. Each attack's outcome is coloured: **green ✔** when it executed (Aqua was
+not enforcing) and **red ✘** when it was prevented (Aqua blocked it). Each leg
+closes with a verdict badge, and a full run ends with a scoreboard of all legs.
+Run the image once with protection off and once with it on and the same log
+turns from green to red, so the effect of a policy is visible at a glance in
+`kubectl logs`, k9s, or `docker run`.
 
 The Drift leg probes repeatedly rather than once, because drift prevention is
 not yet enforcing in the first seconds of a container's life: the enforcer has to
@@ -50,11 +54,11 @@ its own actions but never whether Aqua raised an incident. Green means the actio
 was not blocked, which is not the same as "not detected" — an audit-mode policy
 alerts without stopping anything.
 
-Two states stay deliberately uncoloured so they do not read as failures:
+Two more states are neither green nor red, so they do not read as a miss or a block:
 
 | State | Meaning |
 |-------|---------|
-| plain `·` | a **detect-only** control. Behavioural Detection has no prevent mode, so the rootkit attaching *is* the expected outcome and the verdict is in the Aqua console (TRC-191). |
+| blue `●` | a **detect-only** control. Behavioural Detection has no prevent mode, so the rootkit attaching *is* the expected outcome and the verdict is in the Aqua console (TRC-191). |
 | dim `‒` | the leg cannot run in this environment at all, e.g. eBPF without privilege or BTF. |
 
 Colour is on by default. Set `NO_COLOR=1` (or `AQUA_DEMO_COLOR=never`) to emit

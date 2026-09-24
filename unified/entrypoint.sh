@@ -20,27 +20,18 @@
 # fully simulated (see weaponize.sh), and the eBPF rootkit is declawed.
 set -u
 
-AQUA_DEMO_VERSION="1.1.3"
+AQUA_DEMO_VERSION="1.1.4"
 
-# shellcheck source=../combined-runtime/colors.sh
+# shellcheck source=colors.sh
 . /app/colors.sh
-
-# One legend so a reader knows what the colours mean. Run the image with Aqua
-# not enforcing and the lines are mostly green (attacks executed); run it with
-# enforcement on and they turn red (attacks prevented).
-legend() {
-  printf '%s  ✔ green%s = attack executed (not enforced)   %s✘ red%s = attack prevented (Aqua blocked)\n' \
-    "$C_GREEN" "$C_RESET" "$C_RED" "$C_RESET"
-}
 
 # Stay alive until the pod is terminated. Backgrounding sleep and waiting on it
 # lets the TERM trap fire immediately, so deletes do not sit out the grace period.
 idle_if_asked() {
   case "${KEEP_RUNNING:-}" in
     true|TRUE|1|yes)
-      echo
-      echo "KEEP_RUNNING set — idling; container stays up until terminated."
-      trap 'echo "[entrypoint] terminating"; exit 0' TERM INT
+      info "KEEP_RUNNING is set; idling until the pod is terminated"
+      trap 'info "terminating"; exit 0' TERM INT
       while :; do
         sleep 3600 &
         wait $!
@@ -49,20 +40,29 @@ idle_if_asked() {
   esac
 }
 
+# Each leg appends its verdict to a file seeded with the leg's display name;
+# the scoreboard reads them back in order.
+results=$(mktemp -d /tmp/aqua-demo.XXXXXX)
+leg_n=0
+leg_total=1
+
 step() {
   local name="$1"
-  printf '\n%s========================= %s =========================%s\n' "$C_CYAN" "$name" "$C_RESET"
   shift
-  "$@" || printf '%s(%s leg returned non-zero; continuing)%s\n' "$C_DIM" "$name" "$C_RESET"
+  leg_n=$((leg_n + 1))
+  leg_header "$leg_n" "$leg_total" "$name"
+  export AQUA_DEMO_RESULT="$results/$leg_n"
+  echo "$name" > "$AQUA_DEMO_RESULT"
+  "$@" || info "($name leg returned non-zero; continuing)"
 }
 
 run_leg() {
   case "$1" in
-    drift)       step "Drift Prevention"        /app/drift.sh ;;
-    amp)         step "Advanced Malware (AMP)"  /app/amp.sh ;;
-    secure-ai)   step "Secure AI"               python3 /app/secure_ai.py ;;
-    behavioural) step "Behavioural (eBPF)"      /app/run-behavioural.sh ;;
-    dta)         step "DTA weaponization (sim)" /app/weaponize.sh ;;
+    drift)       step "Drift Prevention"       /app/drift.sh ;;
+    amp)         step "Advanced Malware (AMP)" /app/amp.sh ;;
+    secure-ai)   step "Secure AI"              python3 /app/secure_ai.py ;;
+    behavioural) step "Behavioural (eBPF)"     /app/run-behavioural.sh ;;
+    dta)         step "DTA weaponization"      /app/weaponize.sh ;;
     *)           return 1 ;;
   esac
 }
@@ -76,15 +76,14 @@ if [ "$#" -gt 0 ]; then
   exec "$@"
 fi
 
-printf '%s=== unified aqua-protection-demo v%s starting ===%s\n' "$C_CYAN" "$AQUA_DEMO_VERSION" "$C_RESET"
-legend
+leg_total=5
+banner "AQUA PROTECTION DEMO" "$AQUA_DEMO_VERSION" "5 attacks against 5 Aqua controls · no real malware"
 
 for leg in drift amp secure-ai behavioural dta; do
   run_leg "$leg"
 done
 
-printf '\n%s=== unified aqua-protection-demo v%s finished ===%s\n' "$C_CYAN" "$AQUA_DEMO_VERSION" "$C_RESET"
-legend
+scoreboard "$results"
 idle_if_asked
 # keep the container alive briefly so the enforcer flushes incidents
 sleep 5

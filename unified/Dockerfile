@@ -26,12 +26,12 @@ COPY --from=bpfbuild /build/src/rootkit          /app/behavioural/rootkit
 COPY --from=bpfbuild /build/src/rootkit.bpf.o    /app/behavioural/rootkit.bpf.o
 
 # shared colour helper (green = attack executed, red = attack blocked)
-COPY combined-runtime/colors.sh     /app/colors.sh
+COPY unified/colors.sh     /app/colors.sh
 
 # runtime legs
-COPY combined-runtime/drift.sh      /app/drift.sh
-COPY combined-runtime/amp.sh        /app/amp.sh
-COPY combined-runtime/secure_ai.py  /app/secure_ai.py
+COPY unified/drift.sh      /app/drift.sh
+COPY unified/amp.sh        /app/amp.sh
+COPY unified/secure_ai.py  /app/secure_ai.py
 
 # scan-time weaponization simulator (benign)
 COPY unified/weaponize.sh     /app/weaponize.sh

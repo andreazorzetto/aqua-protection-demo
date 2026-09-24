@@ -1,8 +1,8 @@
-# Build and publish the demo images on a version tag.
+# Build and publish the demo image on a version tag.
 #
 #   git tag v1.0.0 && git push origin v1.0.0
 #
-# Publishes both images to Docker Hub as :<version> and :latest. The images are
+# Publishes the image to Docker Hub as :<version> and :latest. The image is
 # linux/amd64 only: the eBPF leg is x86_64-only.
 #
 # Required repository secret:

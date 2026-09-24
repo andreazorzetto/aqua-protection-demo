@@ -18,36 +18,53 @@ error means Secure AI enforced and PREVENTED the outbound call (red).
 import json
 import os
 import ssl
+import sys
 import time
 import urllib.error
 import urllib.request
 
+# Line-buffer stdout so each line streams as it happens; piped to a container
+# log, Python otherwise holds the output until exit.
+sys.stdout.reconfigure(line_buffering=True)
+
 # Colour on by default; NO_COLOR=<any> or AQUA_DEMO_COLOR=never disables it,
-# AQUA_DEMO_COLOR=always forces it.
+# AQUA_DEMO_COLOR=always forces it. Layout matches colors.sh.
 _mode = os.environ.get("AQUA_DEMO_COLOR", "auto").lower()
 if _mode in ("never", "off", "0") or (_mode == "auto" and os.environ.get("NO_COLOR")):
-    C_RESET = C_GREEN = C_RED = C_DIM = ""
+    C_RESET = C_GREEN = C_RED = C_CYAN = C_DIM = B_GREEN = B_RED = B_YELLOW = ""
 else:
-    C_RESET, C_GREEN, C_RED, C_DIM = "\033[0m", "\033[1;32m", "\033[1;31m", "\033[2m"
+    C_RESET, C_GREEN, C_RED, C_CYAN, C_DIM = "\033[0m", "\033[1;32m", "\033[1;31m", "\033[1;36m", "\033[2m"
+    B_GREEN, B_RED, B_YELLOW = "\033[1;30;42m", "\033[1;97;41m", "\033[1;30;43m"
+
+T0 = int(os.environ.get("AQUA_DEMO_T0", time.time()))
 
 _ok = 0
 _blocked = 0
 
 
+def clock():
+    s = int(time.time()) - T0
+    return f"{C_DIM}{s // 60:02d}:{s % 60:02d}{C_RESET}"
+
+
+def act(msg):
+    print(f"  {clock()} {C_CYAN}▸{C_RESET} {msg}")
+
+
 def info(msg):
-    print(f"{C_DIM}{msg}{C_RESET}")
+    print(f"          {C_DIM}{msg}{C_RESET}")
 
 
 def ok(msg):
     global _ok
     _ok += 1
-    print(f"{C_GREEN}  ✔ {msg}{C_RESET}")
+    print(f"  {clock()} {C_GREEN}✔ {msg}{C_RESET}")
 
 
 def blocked(msg):
     global _blocked
     _blocked += 1
-    print(f"{C_RED}  ✘ {msg}{C_RESET}")
+    print(f"  {clock()} {C_RED}✘ {msg}{C_RESET}")
 
 
 TARGETS = [
@@ -73,7 +90,12 @@ TARGETS = [
 ]
 
 
-def call(label, url, headers, body):
+def call(label, url, headers, body, first):
+    act(f"POST {url}")
+    if first:
+        system = body.get("system") or body["messages"][0]["content"]
+        info(f"model  {body['model']}")
+        info(f"system prompt  \"{system}\"")
     req = urllib.request.Request(url, data=json.dumps(body).encode(),
                                  headers=headers, method="POST")
     try:
@@ -90,19 +112,27 @@ def call(label, url, headers, body):
 
 def leg_summary():
     if _blocked and not _ok:
-        print(f"{C_RED}  → {_blocked} prevented, 0 executed — Aqua blocked this leg{C_RESET}")
+        state, badge, note = "prevented", f"{B_RED} ✘ PREVENTED {C_RESET}", f"{_blocked} of {_blocked} AI calls blocked by Aqua"
     elif _blocked:
-        print(f"{C_GREEN}  → {_ok} executed{C_RESET}, {C_RED}{_blocked} prevented{C_RESET}")
+        state, badge, note = "mixed", f"{B_YELLOW} ◐ MIXED     {C_RESET}", f"{_blocked} prevented, {_ok} executed"
     else:
-        print(f"{C_GREEN}  → {_ok} executed, 0 prevented{C_RESET}")
+        state, badge, note = "executed", f"{B_GREEN} ✔ EXECUTED  {C_RESET}", f"{_ok} of {_ok} AI calls reached the provider"
+    print(f"\n  {C_DIM}└─▶{C_RESET} {badge}  {note}")
+    result = os.environ.get("AQUA_DEMO_RESULT")
+    if result:
+        with open(result, "a") as f:
+            f.write(f"{state}|{note}\n")
 
 
 def main():
-    info("Issuing outbound TLS requests to AI providers...")
-    for _ in range(2):
+    print(f"  {C_DIM}attack{C_RESET}  send chat requests to OpenAI and Anthropic over TLS")
+    print(f"  {C_DIM}expect{C_RESET}  Secure AI records the model and system prompt, even on a 401\n")
+    for n in range(2):
         for t in TARGETS:
-            call(*t)
-        time.sleep(3)
+            call(*t, first=(n == 0))
+        if n == 0:
+            info("second round in 3s")
+            time.sleep(3)
     leg_summary()
 
 
