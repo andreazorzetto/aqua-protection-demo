@@ -124,5 +124,12 @@ beacon() {
 beacon &
 info "*.invalid names never resolve; 192.0.2.10 is TEST-NET and never routes"
 
-countdown 35 "all behaviours emitted; holding 35s so the sandbox can observe them"
+# Hold so the DTA sandbox observes the background behaviours (miners, sweep,
+# beacons) before the container exits. Nothing is scored during the hold, so a
+# live run sets AQUA_DEMO_DTA_HOLD=0; a scan runs with the default.
+hold="${AQUA_DEMO_DTA_HOLD:-35}"
+case "${hold}" in ''|*[!0-9]*) hold=35 ;; esac
+if [ "${hold}" -gt 0 ]; then
+  countdown "${hold}" "all behaviours emitted; holding ${hold}s so the sandbox can observe them"
+fi
 leg_summary

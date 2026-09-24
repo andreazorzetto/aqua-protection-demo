@@ -25,6 +25,11 @@ spec:
           image: andreazorzetto/aqua-protection-demo:latest
           imagePullPolicy: Always
           # args: ["amp"]
+          env:
+            # Skip the 35s hold at the end of the DTA leg; it only matters when
+            # the image is scanned in the DTA sandbox.
+            - name: AQUA_DEMO_DTA_HOLD
+              value: "0"
           # Optional real AI keys for the Secure AI leg (OPENAI_API_KEY,
           # ANTHROPIC_API_KEY). Absent the Secret, the leg still fires on the
           # outbound TLS request and the provider returns 401.

@@ -49,6 +49,12 @@ blocks. If an attempt is prevented after earlier ones ran, the log reports the
 container age at which it happened, which shows how long the enforcer took to
 attach and what the setting can safely be lowered to.
 
+The DTA leg ends by holding for 35 seconds so the DTA sandbox can observe its
+background behaviours (miner and scanner processes, the port sweep, the beacons)
+before the container exits. Nothing is scored during the hold, so for a live run
+set `AQUA_DEMO_DTA_HOLD=0` to skip it; both manifests in `k8s/` do. Leave it
+unset when the image is scanned.
+
 Red is the only unambiguous signal, because a container can see what happened to
 its own actions but never whether Aqua raised an incident. Green means the action
 was not blocked, which is not the same as "not detected" — an audit-mode policy
